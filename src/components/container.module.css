@@ -1,0 +1,11 @@
+.container {
+    width: 1000px;
+    height: 720px;
+    border: thin solid black;
+    margin: auto;
+    margin-top: 5rem;
+}
+
+.container:hover{
+    box-shadow: 0 0 1.5rem .3rem rgba(171, 174, 177, 0.65);
+}
