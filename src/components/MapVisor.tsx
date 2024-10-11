@@ -2,15 +2,18 @@ import { useEffect } from "react";
 import {
   MapContainer,
   Marker,
-  //   Popup,
+  // Popup,
   TileLayer,
   useMap,
   Tooltip,
-  LayersControl,
+  GeoJSON,
 } from "react-leaflet";
 import { LatLngExpression } from "leaflet";
+import useLayerStore from "../store";
 
-const position: LatLngExpression = [51.505, -0.09];
+import L from "leaflet";
+
+const position: LatLngExpression = [51.8890863499512, 9.73459975132488];
 
 // Listener, to handle event listeners
 const ResizeListener = () => {
@@ -18,7 +21,7 @@ const ResizeListener = () => {
 
   // Event handlers
   const handleResize = (e: any) => {
-    console.log(e, "resized");
+    // console.log(e, "resized");
   };
 
   // Side effects
@@ -33,57 +36,84 @@ const ResizeListener = () => {
 };
 
 const BaseMapContainer = () => {
+  const {
+    states,
+    capitals,
+    fetchStates,
+    fetchCapitals,
+    loading,
+    error,
+    disabledIds,
+  } = useLayerStore();
+  const disabledCapitals = disabledIds.capitals || [];
+  const disabledStates = disabledIds.states || [];
+
+  useEffect(() => {
+    fetchStates();
+    fetchCapitals();
+  }, [fetchStates, fetchCapitals]);
+
   return (
     <MapContainer
       center={position}
-      zoom={13}
+      zoom={7}
       scrollWheelZoom={true}
       style={{ height: "100vh" }}
       preferCanvas={true}
       attributionControl={false}
     >
-      <LayersControl position="bottomleft" collapsed={false}>
-        <LayersControl.BaseLayer checked name="Light map">
-          <TileLayer url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png" />
-        </LayersControl.BaseLayer>
-        <LayersControl.BaseLayer name="Dark map">
-          <TileLayer
-            // url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
-            url="https://tiles.stadiamaps.com/tiles/alidade_smooth_dark/{z}/{x}/{y}{r}.{ext}"
-            // @ts-ignore
-            ext="png"
-          />
-        </LayersControl.BaseLayer>
-      </LayersControl>
-
-      <Marker position={position}>
-        {/* <Popup>
-          A pretty CSS3 popup. <br /> Easily customizable.
-        </Popup> */}
-        <Tooltip direction="top" offset={[-15, -20]} opacity={1}>
-          <div
-            className="img"
-            style={{
-              width: "150px",
-              height: "150px",
-              textAlign: "center",
-            }}
+      <TileLayer
+        url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
+        attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'
+      />
+      {capitals.map((capital) => {
+        return (
+          <Marker
+            key={capital.id}
+            position={[
+              // @ts-ignore
+              capital?.location?.coordinates[1] || 0,
+              // @ts-ignore
+              capital?.location?.coordinates[0] || 0,
+            ]}
           >
-            <img
-              src="https://images.vexels.com/content/134485/preview/cool-emoji-emoticon-bc7065.png"
-              alt=""
-              style={{
-                width: "100%",
-                height: "100%",
-                objectFit: "cover",
-              }}
-            />
-          </div>
-          <p style={{ textAlign: "center" }}>
-            A pretty CSS3 popup. <br /> Easily customizable.
-          </p>
-        </Tooltip>
-      </Marker>
+            <Tooltip>
+              <p>
+                <b>ID: </b>
+                {capital?.id}
+              </p>
+              <p>
+                <b>Capital: </b>
+                {capital?.name}
+              </p>
+            </Tooltip>
+          </Marker>
+        );
+      })}
+      {states.length > 0 &&
+        states
+          .filter((state) => !disabledStates.includes(state.id))
+          .map((state) => {
+            return (
+              // @ts-ignore
+              <GeoJSON key={state.id} data={state.geometry} key={state.id}>
+                <Tooltip direction="top" offset={[0, -20]}>
+                  <p>
+                    <b>ID: </b>
+                    {state?.id}
+                  </p>
+                  <p>
+                    <b>Estado: </b>
+                    {state?.name}
+                  </p>
+                  <p>
+                    <b>Superficie: </b>
+                    {state?.area} msnm.
+                  </p>
+                </Tooltip>
+              </GeoJSON>
+            );
+          })}
 
       <ResizeListener />
     </MapContainer>

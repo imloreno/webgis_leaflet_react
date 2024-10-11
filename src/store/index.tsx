@@ -2,85 +2,98 @@ import { create } from "zustand";
 import { persist } from "zustand/middleware";
 import axios from "axios";
 
-// const statesProcessor = (features: any[]) => {
-//   const statesResponse = [];
-//   for (let i = 0; i < features.length; i++) {
-//     statesResponse.push({
-//       id: features[i].id,
-//       name: features[i].properties.name,
-//       geometry: features[i].geometry,
-//     });
-//   }
-// };
+interface Geometry {
+  type: string;
+  coordinates: number[][][] | number[][];
+}
 
-// Define the Zustand store to manage dynamic layers from GeoDjango
-const useLayerStore = create(
-  persist(
-    (set, get) => ({
-      layers: [],
-      loading: false,
-      error: null,
+interface Layer {
+  id: number;
+  name: string;
+  area?: number;
+  geometry: Geometry;
+}
 
-      fetchLayers: async () => {
-        set({ loading: true, error: null });
-        try {
-          const states = await axios.get(
-            "http://localhost:7777/api/v1/states/"
-          );
-          const capitals = await axios.get(
-            "http://localhost:7777/api/v1/capitals/"
-          ); // Example of another endpoint
+interface LayerStore {
+  states: Layer[];
+  capitals: Layer[];
+  disabledIds: { [key: string]: number[] };
+  loading: boolean;
+  error: string | null;
+  fetchStates: () => Promise<void>;
+  fetchCapitals: () => Promise<void>;
+  addState: (newLayer: Layer) => void;
+  addCapital: (newLayer: Layer) => void;
+  toggleLayer: (layer: string, id: number) => void;
+}
 
-          // Combine all features from multiple responses into a single array
-          const combinedLayers = [
-            ...states.data.map((feature: any) => ({
-              id: feature.id,
-              name: feature.name,
-              geometry: feature.geometry,
-            })),
-            ...capitals.data.map((feature: any) => ({
-              id: feature.id,
-              name: feature.name,
-              geometry: feature.geometry,
-            })),
-          ];
+const useLayerStore = create<LayerStore>()((set, get) => ({
+  states: [],
+  disabledIds: { states: [], capitals: [] },
+  capitals: [],
+  loading: false,
+  error: null,
 
-          set({ layers: combinedLayers, loading: false });
-        } catch (error) {
-          set({ error: error?.message, loading: false });
-        }
-      },
-
-      // Add a new layer dynamically
-      addLayer: (newLayer: any) => {
-        set((state: any) => ({ layers: [...state.layers, newLayer] }));
-      },
-
-      // Remove a layer by ID
-      removeLayer: (layerId: any) => {
-        set((state: any) => ({
-          layers: state.layers.filter((layer: any) => layer.id !== layerId),
-        }));
-      },
-
-      // Update a specific layer
-      updateLayer: (updatedLayer: any) => {
-        set((state: any) => ({
-          layers: state.layers.map((layer: any) =>
-            layer.id === updatedLayer.id ? { ...layer, ...updatedLayer } : layer
-          ),
-        }));
-      },
-    }),
-    {
-      name: "layer-storage", // Key to store in local storage
+  // Fetch states from GeoDjango API
+  fetchStates: async () => {
+    set({ loading: true, error: null });
+    try {
+      const response = await axios.get("http://localhost:7777/api/v1/states/");
+      const states = response.data.map((feature: any) => ({
+        id: feature.id,
+        name: feature.name,
+        area: feature.area,
+        geometry: feature.geometry,
+      }));
+      set({ states, loading: false });
+    } catch (error: any) {
+      set({ error: error.message, loading: false });
     }
-  )
-);
+  },
+
+  // Fetch capitals from GeoDjango API
+  fetchCapitals: async () => {
+    set({ loading: true, error: null });
+    try {
+      const response = await axios.get(
+        "http://localhost:7777/api/v1/capitals/"
+      );
+      const capitals = response.data.map((feature: any) => ({
+        id: feature.id,
+        name: feature.name,
+        location: feature.location,
+      }));
+      set({ capitals, loading: false });
+    } catch (error: any) {
+      set({ error: error.message, loading: false });
+    }
+  },
+
+  // Add a new state layer dynamically
+  addState: (newLayer) => {
+    set((state) => ({ states: [...state.states, newLayer] }));
+  },
+
+  // Add a new capital layer dynamically
+  addCapital: (newLayer) => {
+    set((state) => ({ capitals: [...state.capitals, newLayer] }));
+  },
+
+  // Enable or disable a layer by id
+  toggleLayer: (layer: string, id: number) => {
+    const targetLayer = get().disabledIds[layer];
+    const layerFiltered = targetLayer.includes(id)
+      ? targetLayer.filter((layerId) => layerId !== id)
+      : [...targetLayer, id];
+    set((state) => ({
+      disabledIds: { ...state.disabledIds, [layer]: layerFiltered },
+    }));
+  },
+}));
 
 export default useLayerStore;
 
 // Usage example in a React component
 // import useLayerStore from './path/to/store';
-// const { layers, fetchLayers, addLayer, removeLayer, updateLayer } = useLayerStore();
-// useEffect(() => { fetchLayers(); }, []);
+// const { states, capitals, fetchStates, fetchCapitals, addState, addCapital } = useLayerStore();
+// useEffect(() => { fetchStates(); fetchCapitals(); }, []);
