@@ -1,0 +1,12 @@
+.menuItemContainer {
+  padding-left: 2rem;
+}
+
+.checkItem {
+  margin-right: .5rem;
+  cursor: "pointer";
+}
+
+.labelItem {
+  cursor: "pointer";
+}

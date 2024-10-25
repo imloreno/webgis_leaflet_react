@@ -1,6 +1,6 @@
 import { create } from "zustand";
-import { persist } from "zustand/middleware";
 import axios from "axios";
+import { Theme } from "../constants";
 
 interface Geometry {
   type: string;
@@ -16,6 +16,7 @@ interface Layer {
 
 interface LayerStore {
   states: Layer[];
+  theme: Theme;
   capitals: Layer[];
   disabledIds: { [key: string]: number[] };
   loading: boolean;
@@ -25,10 +26,12 @@ interface LayerStore {
   addState: (newLayer: Layer) => void;
   addCapital: (newLayer: Layer) => void;
   toggleLayer: (layer: string, id: number) => void;
+  setTheme: (theme: Theme) => void;
 }
 
 const useLayerStore = create<LayerStore>()((set, get) => ({
   states: [],
+  theme: Theme.dark,
   disabledIds: { states: [], capitals: [] },
   capitals: [],
   loading: false,
@@ -89,6 +92,7 @@ const useLayerStore = create<LayerStore>()((set, get) => ({
       disabledIds: { ...state.disabledIds, [layer]: layerFiltered },
     }));
   },
+  setTheme: (theme: Theme) => set({ theme }),
 }));
 
 export default useLayerStore;

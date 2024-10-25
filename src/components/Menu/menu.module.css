@@ -1,0 +1,6 @@
+.menu {
+  user-select: "none";
+  overflow-y: "auto";
+  height: "100vh";
+  border-left: "thin solid #242424";
+}

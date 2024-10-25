@@ -1,39 +1,14 @@
 import { useEffect } from "react";
-import {
-  MapContainer,
-  Marker,
-  // Popup,
-  TileLayer,
-  useMap,
-  Tooltip,
-  GeoJSON,
-} from "react-leaflet";
+import { MapContainer, TileLayer, FeatureGroup, Circle } from "react-leaflet";
 import { LatLngExpression } from "leaflet";
 import useLayerStore from "../store";
 
-import L from "leaflet";
+import { EditControl } from "react-leaflet-draw";
+import { getTheme } from "../constants";
+import Marker from "./Map/Marker";
+import GEOJson from "./Map/GEOJson";
 
 const position: LatLngExpression = [51.8890863499512, 9.73459975132488];
-
-// Listener, to handle event listeners
-const ResizeListener = () => {
-  const map = useMap();
-
-  // Event handlers
-  const handleResize = (e: any) => {
-    // console.log(e, "resized");
-  };
-
-  // Side effects
-  useEffect(() => {
-    map.on("zoom", handleResize);
-    return () => {
-      map.off("zoom", handleResize);
-    };
-  }, [map]);
-
-  return <></>;
-};
 
 const BaseMapContainer = () => {
   const {
@@ -41,9 +16,9 @@ const BaseMapContainer = () => {
     capitals,
     fetchStates,
     fetchCapitals,
-    loading,
-    error,
     disabledIds,
+    theme,
+    loading,
   } = useLayerStore();
   const disabledCapitals = disabledIds.capitals || [];
   const disabledStates = disabledIds.states || [];
@@ -52,6 +27,8 @@ const BaseMapContainer = () => {
     fetchStates();
     fetchCapitals();
   }, [fetchStates, fetchCapitals]);
+
+  const mapTheme = getTheme(theme);
 
   return (
     <MapContainer
@@ -62,60 +39,53 @@ const BaseMapContainer = () => {
       preferCanvas={true}
       attributionControl={false}
     >
-      <TileLayer
-        url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
-        attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'
-      />
-      {capitals.map((capital) => {
-        return (
-          <Marker
-            key={capital.id}
-            position={[
-              // @ts-ignore
-              capital?.location?.coordinates[1] || 0,
-              // @ts-ignore
-              capital?.location?.coordinates[0] || 0,
-            ]}
-          >
-            <Tooltip>
-              <p>
-                <b>ID: </b>
-                {capital?.id}
-              </p>
-              <p>
-                <b>Capital: </b>
-                {capital?.name}
-              </p>
-            </Tooltip>
-          </Marker>
-        );
-      })}
-      {states.length > 0 &&
+      <TileLayer {...mapTheme.mapProps} />
+      {capitals.length > 0 || loading ? (
+        capitals
+          .filter((capital) => !disabledCapitals.includes(capital.id))
+          // @ts-ignore
+          .map(({ id, name, location: { coordinates } }) => {
+            return (
+              <Marker key={id} id={id} name={name} coordinates={coordinates} />
+            );
+          })
+      ) : (
+        <p>Cargando...</p>
+      )}
+
+      {states.length > 0 || loading ? (
         states
           .filter((state) => !disabledStates.includes(state.id))
-          .map((state) => {
+          .map(({ id, name, area, geometry }) => {
             return (
               // @ts-ignore
-              <GeoJSON key={state.id} data={state.geometry} key={state.id}>
-                <Tooltip direction="top" offset={[0, -20]}>
-                  <p>
-                    <b>ID: </b>
-                    {state?.id}
-                  </p>
-                  <p>
-                    <b>Estado: </b>
-                    {state?.name}
-                  </p>
-                  <p>
-                    <b>Superficie: </b>
-                    {state?.area} msnm.
-                  </p>
-                </Tooltip>
-              </GeoJSON>
+              <GEOJson
+                key={id}
+                id={id}
+                name={name}
+                area={area}
+                geometry={geometry}
+              />
             );
-          })}
+          })
+      ) : (
+        <p>Cargando...</p>
+      )}
 
-      <ResizeListener />
+      <FeatureGroup>
+        <EditControl
+          position="topright"
+          onEdited={() => {}}
+          onCreated={(e) => {
+            console.log(e);
+          }}
+          onDeleted={() => {}}
+          draw={{
+            rectangle: false,
+          }}
+        />
+        <Circle center={[51.51, -0.06]} radius={200} />
+      </FeatureGroup>
     </MapContainer>
   );
 };

@@ -1,0 +1,22 @@
+.iconButtonContainer {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 1.8rem;
+  height: 1.8rem;
+  background-color: white;
+  border: thin solid #dedede;
+  border-radius: 0.5rem;
+  cursor: pointer;
+  z-index: 1;
+
+  &:hover {
+    transform: scale(1.1);
+  }
+}
+
+.iconImg {
+  width: 1.3rem;
+  height: 1.3rem;
+  object-fit: cover;
+}
